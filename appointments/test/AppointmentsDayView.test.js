@@ -4,7 +4,7 @@ import ReactDOMTestUtils from "react-dom/test-utils";
 import {
   Appointment,
   AppointmentsDayView,
-} from "../src/components/Appointment";
+} from "../src/components/AppointmentsDayView";
 
 describe("Appointment", () => {
   let container;

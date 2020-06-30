@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import { AppointmentsDayView } from "./components/Appointment";
+import { AppointmentsDayView } from "./components/AppointmentsDayView";
 import { sampleAppointments } from "./sampleData";
 
 const rootDiv = document.getElementById("root");
