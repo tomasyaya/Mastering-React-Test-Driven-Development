@@ -70,7 +70,7 @@ describe("CustomerForm", () => {
         />
       );
       await ReactDOMTestUtils.Simulate.change(field(fieldName), {
-        target: { value },
+        target: { value, name: fieldName },
       });
       await ReactDOMTestUtils.Simulate.submit(form("customer"));
     });
@@ -83,5 +83,29 @@ describe("CustomerForm", () => {
     itAssignsAnIdThatMatchesTheLabelId("firstName");
     itSavesExistingValueWhenSubmited("firstName", "value");
     itSavesNewValueWhenSubmited("firstName", "Jaime");
+  });
+
+  describe("last name field", () => {
+    itRendersAsATextBox("lastName");
+    itIncludesTheExistingValue("lastName");
+    itRendersALabel("lastName", "Last name");
+    itAssignsAnIdThatMatchesTheLabelId("lastName");
+    itSavesExistingValueWhenSubmited("lastName", "value");
+    itSavesNewValueWhenSubmited("lastName", "Yaya");
+  });
+
+  describe("phone number field", () => {
+    itRendersAsATextBox("phoneNumber");
+    itIncludesTheExistingValue("phoneNumber");
+    itRendersALabel("phoneNumber", "Phone number");
+    itAssignsAnIdThatMatchesTheLabelId("phoneNumber");
+    itSavesExistingValueWhenSubmited("phoneNumber", "1111");
+    itSavesNewValueWhenSubmited("phoneNumber", "2222x");
+  });
+
+  it("has a submit button", () => {
+    render(<CustomerForm />);
+    const button = container.querySelector('button[type="submit"]');
+    expect(button).not.toBeNull();
   });
 });
