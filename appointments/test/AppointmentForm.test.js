@@ -3,12 +3,13 @@ import 'whatwg-fetch';
 import {
   fetchResponseOk,
   fetchResponseError,
-  requestBodyOf
+  requestBodyOf,
 } from './spyHelpers';
 import { createContainer, withEvent } from './domManipulators';
 import { AppointmentForm } from '../src/AppointmentForm';
 
 describe('AppointmentForm', () => {
+  const customer = { id: 123 };
   let render,
     container,
     form,
@@ -31,7 +32,7 @@ describe('AppointmentForm', () => {
       elements,
       change,
       children,
-      submit
+      submit,
     } = createContainer());
     jest
       .spyOn(window, 'fetch')
@@ -45,11 +46,11 @@ describe('AppointmentForm', () => {
   const findOption = (dropdownNode, textContent) => {
     const options = Array.from(dropdownNode.childNodes);
     return options.find(
-      option => option.textContent === textContent
+      (option) => option.textContent === textContent
     );
   };
 
-  const startsAtField = index =>
+  const startsAtField = (index) =>
     elements(`input[name="startsAt"]`)[index];
 
   it('renders a form', () => {
@@ -64,14 +65,14 @@ describe('AppointmentForm', () => {
   });
 
   it('calls fetch with the right properties when submitting data', async () => {
-    render(<AppointmentForm />);
+    render(<AppointmentForm customer={customer} />);
     await submit(form('appointment'));
     expect(window.fetch).toHaveBeenCalledWith(
       '/appointments',
       expect.objectContaining({
         method: 'POST',
         credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       })
     );
   });
@@ -81,7 +82,9 @@ describe('AppointmentForm', () => {
     window.fetch.mockReturnValue(fetchResponseOk({}));
     const saveSpy = jest.fn();
 
-    render(<AppointmentForm onSave={saveSpy} />);
+    render(
+      <AppointmentForm customer={customer} onSave={saveSpy} />
+    );
     await submit(form('appointment'));
 
     expect(saveSpy).toHaveBeenCalled();
@@ -91,7 +94,9 @@ describe('AppointmentForm', () => {
     window.fetch.mockReturnValue(fetchResponseError());
     const saveSpy = jest.fn();
 
-    render(<AppointmentForm onSave={saveSpy} />);
+    render(
+      <AppointmentForm customer={customer} onSave={saveSpy} />
+    );
     await submit(form('appointment'));
 
     expect(saveSpy).not.toHaveBeenCalled();
@@ -100,9 +105,9 @@ describe('AppointmentForm', () => {
   it('prevents the default action when submitting the form', async () => {
     const preventDefaultSpy = jest.fn();
 
-    render(<AppointmentForm />);
+    render(<AppointmentForm customer={customer} />);
     await submit(form('appointment'), {
-      preventDefault: preventDefaultSpy
+      preventDefault: preventDefaultSpy,
     });
 
     expect(preventDefaultSpy).toHaveBeenCalled();
@@ -111,7 +116,7 @@ describe('AppointmentForm', () => {
   it('renders error message when fetch call fails', async () => {
     window.fetch.mockReturnValue(fetchResponseError());
 
-    render(<AppointmentForm />);
+    render(<AppointmentForm customer={customer} />);
     await submit(form('appointment'));
 
     expect(element('.error')).not.toBeNull();
@@ -124,14 +129,14 @@ describe('AppointmentForm', () => {
     window.fetch.mockReturnValueOnce(fetchResponseError());
     window.fetch.mockReturnValue(fetchResponseOk());
 
-    render(<AppointmentForm />);
+    render(<AppointmentForm customer={customer} />);
     await submit(form('appointment'));
     await submit(form('appointment'));
 
     expect(element('.error')).toBeNull();
   });
 
-  const itRendersAsASelectBox = fieldName => {
+  const itRendersAsASelectBox = (fieldName) => {
     it('renders as a select box', () => {
       render(<AppointmentForm />);
       expect(field('appointment', fieldName)).not.toBeNull();
@@ -141,7 +146,7 @@ describe('AppointmentForm', () => {
     });
   };
 
-  const itInitiallyHasABlankValueChosen = fieldName =>
+  const itInitiallyHasABlankValueChosen = (fieldName) =>
     it('initially has a blank value chosen', () => {
       render(<AppointmentForm />);
       const firstNode = field('appointment', fieldName)
@@ -178,7 +183,7 @@ describe('AppointmentForm', () => {
     });
   };
 
-  const itAssignsAnIdThatMatchesTheLabelId = fieldName => {
+  const itAssignsAnIdThatMatchesTheLabelId = (fieldName) => {
     it('assigns an id that matches the label id', () => {
       render(<AppointmentForm />);
       expect(field('appointment', fieldName).id).toEqual(
@@ -191,6 +196,7 @@ describe('AppointmentForm', () => {
     it('saves existing value when submitted', async () => {
       render(
         <AppointmentForm
+          customer={customer}
           {...props}
           {...{ [fieldName]: 'value' }}
         />
@@ -198,7 +204,7 @@ describe('AppointmentForm', () => {
       await submit(form('appointment'));
 
       expect(requestBodyOf(window.fetch)).toMatchObject({
-        [fieldName]: 'value'
+        [fieldName]: 'value',
       });
     });
   };
@@ -207,6 +213,7 @@ describe('AppointmentForm', () => {
     it('saves new value when submitted', async () => {
       render(
         <AppointmentForm
+          customer={customer}
           {...props}
           {...{ [fieldName]: 'existingValue' }}
         />
@@ -218,7 +225,7 @@ describe('AppointmentForm', () => {
       await submit(form('appointment'));
 
       expect(requestBodyOf(window.fetch)).toMatchObject({
-        [fieldName]: 'newValue'
+        [fieldName]: 'newValue',
       });
     });
   };
@@ -234,10 +241,10 @@ describe('AppointmentForm', () => {
     itRendersALabel('service', 'Salon service');
     itAssignsAnIdThatMatchesTheLabelId('service');
     itSubmitsExistingValue('service', {
-      serviceStylists: { value: [] }
+      serviceStylists: { value: [] },
     });
     itSubmitsNewValue('service', {
-      serviceStylists: { newValue: [], existingValue: [] }
+      serviceStylists: { newValue: [], existingValue: [] },
     });
 
     it('lists all salon services', () => {
@@ -249,7 +256,7 @@ describe('AppointmentForm', () => {
 
       const renderedServices = children(
         field('appointment', 'service')
-      ).map(node => node.textContent);
+      ).map((node) => node.textContent);
       expect(renderedServices).toEqual(
         expect.arrayContaining(selectableServices)
       );
@@ -273,7 +280,7 @@ describe('AppointmentForm', () => {
       const selectableServices = ['1', '2'];
       const selectableStylists = ['A', 'B', 'C'];
       const serviceStylists = {
-        '1': ['A', 'B']
+        '1': ['A', 'B'],
       };
 
       render(
@@ -291,7 +298,7 @@ describe('AppointmentForm', () => {
 
       const renderedServices = children(
         field('appointment', 'stylist')
-      ).map(node => node.textContent);
+      ).map((node) => node.textContent);
       expect(renderedServices).toEqual(
         expect.arrayContaining(['A', 'B'])
       );
@@ -304,7 +311,7 @@ describe('AppointmentForm', () => {
     const today = new Date();
     const availableTimeSlots = [
       { startsAt: today.setHours(9, 0, 0, 0) },
-      { startsAt: today.setHours(9, 30, 0, 0) }
+      { startsAt: today.setHours(9, 30, 0, 0) },
     ];
 
     it('renders a table for time slots', () => {
@@ -399,12 +406,13 @@ describe('AppointmentForm', () => {
           availableTimeSlots={availableTimeSlots}
           today={today}
           startsAt={availableTimeSlots[0].startsAt}
+          customer={customer}
         />
       );
       await submit(form('appointment'));
 
       expect(requestBodyOf(window.fetch)).toMatchObject({
-        startsAt: availableTimeSlots[0].startsAt
+        startsAt: availableTimeSlots[0].startsAt,
       });
     });
 
@@ -414,6 +422,7 @@ describe('AppointmentForm', () => {
           availableTimeSlots={availableTimeSlots}
           today={today}
           startsAt={availableTimeSlots[0].startsAt}
+          customer={customer}
         />
       );
       change(
@@ -426,7 +435,7 @@ describe('AppointmentForm', () => {
       await submit(form('appointment'));
 
       expect(requestBodyOf(window.fetch)).toMatchObject({
-        startsAt: availableTimeSlots[1].startsAt
+        startsAt: availableTimeSlots[1].startsAt,
       });
     });
 
@@ -434,12 +443,12 @@ describe('AppointmentForm', () => {
       const availableTimeSlots = [
         {
           startsAt: today.setHours(9, 0, 0, 0),
-          stylists: ['A', 'B']
+          stylists: ['A', 'B'],
         },
         {
           startsAt: today.setHours(9, 30, 0, 0),
-          stylists: ['A']
-        }
+          stylists: ['A'],
+        },
       ];
 
       render(
@@ -461,6 +470,14 @@ describe('AppointmentForm', () => {
       expect(
         cells[7].querySelector('input[type="radio"]')
       ).toBeNull();
+    });
+  });
+
+  it('passes the customer id to fetch when submitting', async () => {
+    render(<AppointmentForm customer={customer} />);
+    await submit(form('appointment'));
+    expect(requestBodyOf(window.fetch)).toMatchObject({
+      customer: customer.id,
     });
   });
 });
