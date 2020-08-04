@@ -1,9 +1,10 @@
 import React from 'react';
+import { act } from 'react-dom/test-utils';
 import 'whatwg-fetch';
 import {
   fetchResponseOk,
   fetchResponseError,
-  requestBodyOf
+  requestBodyOf,
 } from './spyHelpers';
 import { createContainer, withEvent } from './domManipulators';
 import { CustomerForm } from '../src/CustomerForm';
@@ -16,6 +17,7 @@ describe('CustomerForm', () => {
     labelFor,
     element,
     change,
+    blur,
     submit;
 
   beforeEach(() => {
@@ -27,7 +29,8 @@ describe('CustomerForm', () => {
       labelFor,
       element,
       change,
-      submit
+      blur,
+      submit,
     } = createContainer());
     jest
       .spyOn(window, 'fetch')
@@ -58,7 +61,7 @@ describe('CustomerForm', () => {
       expect.objectContaining({
         method: 'POST',
         credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       })
     );
   });
@@ -89,7 +92,7 @@ describe('CustomerForm', () => {
 
     render(<CustomerForm />);
     await submit(form('customer'), {
-      preventDefault: preventDefaultSpy
+      preventDefault: preventDefaultSpy,
     });
 
     expect(preventDefaultSpy).toHaveBeenCalled();
@@ -118,19 +121,19 @@ describe('CustomerForm', () => {
     expect(element('.error')).toBeNull();
   });
 
-  const expectToBeInputFieldOfTypeText = formElement => {
+  const expectToBeInputFieldOfTypeText = (formElement) => {
     expect(formElement).not.toBeNull();
     expect(formElement.tagName).toEqual('INPUT');
     expect(formElement.type).toEqual('text');
   };
 
-  const itRendersAsATextBox = fieldName =>
+  const itRendersAsATextBox = (fieldName) =>
     it('renders as a text box', () => {
       render(<CustomerForm />);
       expectToBeInputFieldOfTypeText(field('customer', fieldName));
     });
 
-  const itIncludesTheExistingValue = fieldName =>
+  const itIncludesTheExistingValue = (fieldName) =>
     it('includes the existing value', () => {
       render(<CustomerForm {...{ [fieldName]: 'value' }} />);
       expect(field('customer', fieldName).value).toEqual('value');
@@ -143,7 +146,7 @@ describe('CustomerForm', () => {
       expect(labelFor(fieldName).textContent).toEqual(text);
     });
 
-  const itAssignsAnIdThatMatchesTheLabelId = fieldName =>
+  const itAssignsAnIdThatMatchesTheLabelId = (fieldName) =>
     it('assigns an id that matches the label id', () => {
       render(<CustomerForm />);
       expect(field('customer', fieldName).id).toEqual(fieldName);
@@ -156,7 +159,7 @@ describe('CustomerForm', () => {
       await submit(form('customer'));
 
       expect(requestBodyOf(window.fetch)).toMatchObject({
-        [fieldName]: value
+        [fieldName]: value,
       });
     });
 
@@ -172,9 +175,58 @@ describe('CustomerForm', () => {
       await submit(form('customer'));
 
       expect(requestBodyOf(window.fetch)).toMatchObject({
-        [fieldName]: value
+        [fieldName]: value,
       });
     });
+
+  const itInvalidatesFieldWithValue = (
+    fieldName,
+    value,
+    description
+  ) => {
+    it(`displays error after blur when ${fieldName} field is '${value}'`, () => {
+      render(<CustomerForm />);
+      blur(
+        field('customer', fieldName),
+        withEvent(fieldName, value)
+      );
+      expect(element('.error')).not.toBeNull();
+      expect(element('.error').textContent).toMatch(description);
+    });
+  };
+
+  itInvalidatesFieldWithValue(
+    'lastName',
+    ' ',
+    'Last name is required'
+  );
+
+  itInvalidatesFieldWithValue(
+    'firstName',
+    ' ',
+    'First name is required'
+  );
+
+  itInvalidatesFieldWithValue(
+    'phoneNumber',
+    ' ',
+    'Phone number is required'
+  );
+
+  itInvalidatesFieldWithValue(
+    'phoneNumber',
+    'invalid',
+    'Only numbers, spaces and these symbols are allowed: ( ) + -'
+  );
+
+  it('accepts standard phone number characters when validating', () => {
+    render(<CustomerForm />);
+    blur(
+      element("[name='phoneNumber']"),
+      withEvent('phoneNumber', '0123456789+()-+()- ')
+    );
+    expect(element('.error')).toBeNull();
+  });
 
   describe('first name field', () => {
     itRendersAsATextBox('firstName');

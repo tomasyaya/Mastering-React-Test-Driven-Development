@@ -4,33 +4,78 @@ const Error = () => (
   <div className="error">An error occurred during save.</div>
 );
 
+const required = (description) => (value) =>
+  !value || value.trim() === '' ? description : undefined;
+
+const match = (re, description) => (value) =>
+  !value.match(re) ? description : undefined;
+
+const list = (...validators) => (value) =>
+  validators.reduce(
+    (result, validator) => result || validator(value),
+    undefined
+  );
+
+const validators = {
+  firstName: required('First name is required'),
+  lastName: required('Last name is required'),
+  phoneNumber: list(
+    required('Phone number is required'),
+    match(
+      /^[0-9+()\- ]*$/,
+      'Only numbers, spaces and these symbols are allowed: ( ) + -'
+    )
+  ),
+};
+
 export const CustomerForm = ({
   firstName,
   lastName,
   phoneNumber,
-  onSave
+  onSave,
 }) => {
   const [error, setError] = useState(false);
-
+  const [validationErrors, setValidationErrors] = useState({});
   const [customer, setCustomer] = useState({
     firstName,
     lastName,
-    phoneNumber
+    phoneNumber,
   });
 
   const handleChange = ({ target }) =>
-    setCustomer(customer => ({
+    setCustomer((customer) => ({
       ...customer,
-      [target.name]: target.value
+      [target.name]: target.value,
     }));
 
-  const handleSubmit = async e => {
+  const handleBlur = ({ target }) => {
+    const result = validators[target.name](target.value);
+    setValidationErrors({
+      ...validationErrors,
+      [target.name]: result,
+    });
+  };
+
+  const hasError = (fieldName) =>
+    validationErrors[fieldName] !== undefined;
+
+  const rendersError = (fieldName) => {
+    if (hasError(fieldName)) {
+      return (
+        <span className="error">
+          {validationErrors[fieldName]}
+        </span>
+      );
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const result = await window.fetch('/customers', {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(customer)
+      body: JSON.stringify(customer),
     });
     if (result.ok) {
       setError(false);
@@ -51,8 +96,9 @@ export const CustomerForm = ({
         id="firstName"
         value={firstName}
         onChange={handleChange}
+        onBlur={handleBlur}
       />
-
+      {rendersError('firstName')}
       <label htmlFor="lastName">Last name</label>
       <input
         type="text"
@@ -60,8 +106,9 @@ export const CustomerForm = ({
         id="lastName"
         value={lastName}
         onChange={handleChange}
+        onBlur={handleBlur}
       />
-
+      {rendersError('lastName')}
       <label htmlFor="phoneNumber">Phone number</label>
       <input
         type="text"
@@ -69,7 +116,9 @@ export const CustomerForm = ({
         id="phoneNumber"
         value={phoneNumber}
         onChange={handleChange}
+        onBlur={handleBlur}
       />
+      {rendersError('phoneNumber')}
 
       <input type="submit" value="Add" />
     </form>
@@ -77,5 +126,5 @@ export const CustomerForm = ({
 };
 
 CustomerForm.defaultProps = {
-  onSave: () => {}
+  onSave: () => {},
 };
